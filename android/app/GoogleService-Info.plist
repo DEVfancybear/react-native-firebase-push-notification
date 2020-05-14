@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>919782805302-q2mlf8abe8vrlunm2igjcfaf43f9vppg.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.919782805302-q2mlf8abe8vrlunm2igjcfaf43f9vppg</string>
+	<key>API_KEY</key>
+	<string>AIzaSyB1eqFRRtZPuxFj_GrTUnAy5xBmnbAjuTY</string>
+	<key>GCM_SENDER_ID</key>
+	<string>919782805302</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.shinpac</string>
+	<key>PROJECT_ID</key>
+	<string>notificationsrn-c053f</string>
+	<key>STORAGE_BUCKET</key>
+	<string>notificationsrn-c053f.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:919782805302:ios:78c118070a0599f70e6d97</string>
+	<key>DATABASE_URL</key>
+	<string>https://notificationsrn-c053f.firebaseio.com</string>
+</dict>
+</plist>

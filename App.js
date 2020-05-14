@@ -1,139 +1,142 @@
-import React from 'react'
-import firebase from 'react-native-firebase'
+import React, {Component} from 'react';
+import {View, Text, Alert} from 'react-native';
+import firebase from 'react-native-firebase';
 
-class App extends React.Component {
-  componentDidMount () {
-    this.checkPermission()
+export default class App extends Component {
+  async componentDidMount() {
+    await this.checkPermission();
+    await this.createNotificationListeners();
   }
 
-  async getToken () {
-    try {
-      const fcmToken = await firebase.messaging().getToken()
-      console.log(fcmToken)
-    } catch (error) {
-      console.warn(error)
+  //1
+  async checkPermission() {
+    const enabled = await firebase.messaging().hasPermission();
+    if (enabled) {
+      this.getToken();
+    } else {
+      this.requestPermission();
     }
   }
 
-  async requestPermission () {
+  //3
+  async getToken() {
+    let fcmToken = await firebase.messaging().getToken();
+    if (fcmToken) {
+      // user has a device token
+      console.log('fcmToken', fcmToken);
+    }
+  }
+
+  //2
+  async requestPermission() {
     try {
-      await firebase.messaging().requestPermission()
+      await firebase.messaging().requestPermission();
       // User has authorised
-      this.getToken()
-      this.createNotificationListeners()
+      this.getToken();
     } catch (error) {
       // User has rejected permissions
-      console.log('permission rejected')
+      console.log('permission rejected');
     }
   }
 
-  async checkPermission () {
-    const enabled = await firebase.messaging().hasPermission()
-    if (enabled) {
-      this.getToken()
-      this.createNotificationListeners()
-    } else {
-      this.requestPermission()
-    }
+  render() {
+    return (
+      <View style={{flex: 1}}>
+        <Text>Welcome to React Native!</Text>
+      </View>
+    );
+  }
+  ////////////////////// Add these methods //////////////////////
+
+  //Remove listeners allocated in createNotificationListeners()
+  componentWillUnmount() {
+    this.notificationListener();
+    this.notificationOpenedListener();
   }
 
-  createNotificationListeners () {
-    try {
-      const channel = new firebase.notifications.Android.Channel('channel_name1', 'channel_name1', firebase.notifications.Android.Importance.High)
-      // .setDescription('channel_name')
-        .setSound('default')
-      firebase.notifications().android.createChannel(channel)
-      /*
-       * Triggered when a particular notification has been received in foreground
-       * */
-
-      this.notificationListener = firebase
-        .notifications()
-        .onNotification(notification => {
-          const { title, body, data, notificationId } = notification
-          const localNotification = new firebase.notifications.Notification({
-            sound: 'default',
-            show_in_foreground: true
-          })
-            .setNotificationId(new Date().valueOf().toString())
-            .setTitle(title)
-            .setSound('default')
-            .setBody(body)
-            .setData({
-              now: new Date().toISOString(),
-              payload: data
-            })
-            .android.setAutoCancel(true)
-            .android.setBigText(body)
-            // .android.setLargeIcon('ic_launchers')
-            .android.setVibrate(1000)
-            .android.setColor('#74c900')
-            .android.setColorized(true)
-            .android.setChannelId(channel.channelId) // e.g. the id you chose above
-            // .android.setSmallIcon('ic_launchers') // create this icon in Android Studio
-            .android.setPriority(firebase.notifications.Android.Priority.High)
-
-          firebase
-            .notifications()
-            .displayNotification(localNotification)
+  async createNotificationListeners() {
+    /*
+     * Triggered when a particular notification has been received in foreground
+     * */
+    console.log('Start createNotificationListeners');
+    this.notificationListener = await firebase
+      .notifications()
+      .onNotification((notification) => {
+        const localNotification = new firebase.notifications.Notification({
+          sound: 'default',
+          show_in_foreground: true,
         })
+          .setNotificationId(notification.notificationId)
+          .setTitle(notification.title)
+          .setSubtitle(notification.subtitle)
+          .setBody(notification.body)
+          .setData(notification.data)
+          // .setBadge(notification.data.badge ? notification.data.badge : 1)
+          .android.setChannelId('fcm_default_channel') // e.g. the id you chose above
+          // .android.setSmallIcon('@drawable/ic_launcher') // create this icon in Android Studio
+          .android.setColor('#000000') // you can set a color here
+          .android.setPriority(firebase.notifications.Android.Priority.High);
 
-      /*
-       * If your app is in background, you can listen for when a notification is
-       * clicked / tapped / opened as follows:
-       * */
-      this.notificationOpenedListener = firebase
-        .notifications()
-        .onNotificationOpened(notificationOpen => {
-          const { title, body, data } = notificationOpen.notification
-          console.log('open screen', { title, body, data })
-          switch (data.screen) {
-            case 'web':
-              return this.props.navigation.navigate('Web')
-            default:
-              break
-          }
+        firebase
+          .notifications()
+          .displayNotification(localNotification)
+          .catch((err) => console.error(err));
+      });
 
-          firebase
-            .notifications()
-            .removeDeliveredNotification(
-              notificationOpen.notification.notificationId
-            )
-        })
+    /*
+     * If your app is in background, you can listen for when a notification is clicked / tapped / opened as follows:
+     * */
+    this.notificationOpenedListener = await firebase
+      .notifications()
+      .onNotificationOpened((notificationOpen) => {
+        const {title, body} = notificationOpen.notification;
+        this.showAlert(title, body);
+      });
 
-      /*
-       * If your app is closed, you can check if it was opened by a notification
-       * being clicked / tapped / opened as follows:
-       * */
+    /*
+     * If your app is closed, you can check if it was opened by a notification being clicked / tapped / opened as follows:
+     * */
+    const notificationOpen = await firebase
+      .notifications()
+      .getInitialNotification();
+    if (notificationOpen) {
+      const {title, body} = notificationOpen.notification;
+      this.showAlert(title, body);
+    }
+    /*
+     * Triggered for data only payload in foreground
+     * */
+    this.messageListener = await firebase.messaging().onMessage((message) => {
+      //process data message
+      console.log('message', JSON.stringify(message));
+      const localNotification = new firebase.notifications.Notification({
+        sound: 'default',
+        show_in_foreground: true,
+      })
+        //.setNotificationId(notification.notificationId)
+        .setTitle(message.data.title)
+        .setSubtitle(message.data.message)
+        .setBody(message.data.body)
+        //.setData(notification.data)
+        .android.setChannelId('fcm_default_channel') // e.g. the id you chose above
+        //.android.setSmallIcon('@drawable/ic_launcher') // create this icon in Android Studio
+        .android.setColor('#000000') // you can set a color here
+        .android.setPriority(firebase.notifications.Android.Priority.High);
+      //console.log("getMessage", message.data);
+
       firebase
         .notifications()
-        .getInitialNotification()
-        .then(notificationOpen => {
-          if (notificationOpen) {
-            const { title, body, data } = notificationOpen.notification
-            console.log('closed screen', { title, body, data })
-            switch (data.screen) {
-              case 'web':
-                return this.props.navigation.navigate('Web')
-              default:
-                break
-            }
-          }
-        })
-
-      /*
-       * Triggered for data only payload in foreground
-       * */
-      this.messageListener = firebase.messaging().onMessage(message => {
-        // process data message
-        console.log(JSON.stringify(message))
-      })
-    } catch (error) {}
+        .displayNotification(localNotification)
+        .catch((err) => console.error(err));
+    });
   }
 
-  render () {
-    return null
+  showAlert(title, body) {
+    Alert.alert(
+      title,
+      body,
+      [{text: 'OK', onPress: () => console.log('OK Pressed')}],
+      {cancelable: false},
+    );
   }
 }
-
-export default App
